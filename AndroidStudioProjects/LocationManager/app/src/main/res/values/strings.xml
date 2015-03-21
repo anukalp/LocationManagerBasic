@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">LocationManager</string>
+
+    <string name="lat">Lat</string>
+    <string name="lon">Lng</string>
+    <string name="action_settings">Settings</string>
+    <string name="gps_alert_title">Location Disabled</string>
+    <string name="gps_alert_msg">Please turn on location to high accuracy!</string>
+    <string name="gps_alert_done">ENABLE GPS</string>
+    <string name="gps_alert_cancel">CANCEL</string>
+    <string name="connection_error">Connection Error!</string>
+    <string name="connection_error_title">Check your internet connection</string>
+</resources>
