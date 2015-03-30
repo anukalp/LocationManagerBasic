@@ -17,22 +17,30 @@ import android.os.Bundle;
 public class CustomDialogFragment extends DialogFragment {
 
     private static final String GPS_DIALOG = "custom_gps_dialog";
+
     private static final String KEY_TITLE_STRING = "title";
+
     private static final String KEY_ALERT_STRING = "alert";
+
     private static final String KEY_ALERT_TYPE = "type";
 
     public static void show(FragmentManager fragmentManager, boolean isGPSDialog, Context mContext) {
-        CustomDialogFragment instance = (CustomDialogFragment) fragmentManager
+        CustomDialogFragment instance = (CustomDialogFragment)fragmentManager
                 .findFragmentByTag(GPS_DIALOG);
-        Bundle bundle = new Bundle();
-        bundle.putString(KEY_TITLE_STRING, mContext.getResources().getString(isGPSDialog ? R.string.gps_alert_title : R.string.connection_error_title));
-        bundle.putString(KEY_ALERT_STRING, mContext.getResources().getString(isGPSDialog ? R.string.gps_alert_msg : R.string.connection_error));
-        bundle.putBoolean(KEY_ALERT_TYPE, isGPSDialog);
-        if (instance == null) {
-            instance = new CustomDialogFragment();
-        } else {
+        if (null != instance) {
             instance.dismissAllowingStateLoss();
         }
+        Bundle bundle = new Bundle();
+        bundle.putString(
+                KEY_TITLE_STRING,
+                mContext.getResources().getString(
+                        isGPSDialog ? R.string.gps_alert_title : R.string.connection_error_title));
+        bundle.putString(
+                KEY_ALERT_STRING,
+                mContext.getResources().getString(
+                        isGPSDialog ? R.string.gps_alert_msg : R.string.connection_error));
+        bundle.putBoolean(KEY_ALERT_TYPE, isGPSDialog);
+        instance = new CustomDialogFragment();
         instance.setArguments(bundle);
         instance.show(fragmentManager, GPS_DIALOG);
     }
@@ -48,7 +56,9 @@ public class CustomDialogFragment extends DialogFragment {
         builder.setMessage(mAlertMessage)
                 .setTitle(mTitleText)
                 .setCancelable(false)
-                .setPositiveButton(mContext.getResources().getString(isGpsDialog ? R.string.gps_alert_done : android.R.string.ok),
+                .setPositiveButton(
+                        mContext.getResources().getString(
+                                isGpsDialog ? R.string.gps_alert_done : android.R.string.ok),
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 if (!isAdded())
@@ -75,5 +85,13 @@ public class CustomDialogFragment extends DialogFragment {
         }
         AlertDialog alert = builder.create();
         return alert;
+    }
+
+    public static void dismissDialog(FragmentManager fragmentManager) {
+        CustomDialogFragment instance = (CustomDialogFragment)fragmentManager
+                .findFragmentByTag(GPS_DIALOG);
+        if (null != instance) {
+            instance.dismissAllowingStateLoss();
+        }
     }
 }

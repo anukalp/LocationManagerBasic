@@ -1,10 +1,16 @@
 
 package com.example.administrator.locationmanager;
 
+import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.location.LocationListener;
-import android.support.v7.app.ActionBarActivity;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,28 +21,49 @@ public class MainActivity extends ActionBarActivity {
     private MyLocationManager mLocationManager;
 
     private MyLocationListener mLocationListener;
+    
+    private ConnectivityBroadcastReceiver mReceiver;
+
+    private class ConnectivityBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION)){
+                if (mLocationManager.isInternetAvailable() && mLocationManager.isGPSEnabled()
+                        && mLocationManager.isHighAccuracyLocationMode()) {
+                    CustomDialogFragment.dismissDialog(getFragmentManager());
+                    mLocationManager.requestLocationUpdates(mLocationListener);
+                } else if (!mLocationManager.isGPSEnabled()
+                        || !mLocationManager.isHighAccuracyLocationMode()) {
+                    CustomDialogFragment.show(getFragmentManager(), true, MainActivity.this);
+                } else if (!mLocationManager.isInternetAvailable()) {
+                    CustomDialogFragment.show(getFragmentManager(), false, MainActivity.this);
+                }
+            }
+        }
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mLocationManager = MyLocationManager.getInstance(this);
+        if (null == mLocationListener)
+            mLocationListener = new MyLocationListener(getFragmentManager());
+        mReceiver = new ConnectivityBroadcastReceiver(); 
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (mLocationManager.isInternetAvailable() && mLocationManager.isGPSEnabled()
-                && mLocationManager.isHighAccuracyLocationMode()) {
-            if (null == mLocationListener)
-                mLocationListener = new MyLocationListener();
-            mLocationManager.requestLocationUpdates(mLocationListener);
-        } else if (!mLocationManager.isGPSEnabled()
-                || !mLocationManager.isHighAccuracyLocationMode()) {
-            CustomDialogFragment.show(getFragmentManager(), true, this);
-        } else if (!mLocationManager.isInternetAvailable()) {
-            CustomDialogFragment.show(getFragmentManager(), false, this);
+        mLocationManager.requestLocationUpdates(mLocationListener);
+        if (!mLocationManager.isInternetAvailable()) {
+            CustomDialogFragment.show(getFragmentManager(), false, MainActivity.this);
         }
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(mReceiver, filter);
     }
 
     @Override
@@ -45,6 +72,7 @@ public class MainActivity extends ActionBarActivity {
         if (null != mLocationListener) {
             mLocationManager.unregisterListener(mLocationListener);
         }
+        unregisterReceiver(mReceiver);
     }
 
     @Override
@@ -71,42 +99,55 @@ public class MainActivity extends ActionBarActivity {
 
     public class MyLocationListener implements LocationListener {
 
+        private final FragmentManager mFragmentManager;
+
+        public MyLocationListener(FragmentManager fm) {
+            mFragmentManager = fm;
+        }
+
         @Override
         public void onLocationChanged(Location location) {
-            ((TextView)findViewById(R.id.latitude)).setText(getResources().getString(R.string.lat)
-                    + ": " + String.valueOf(location.getLatitude()));
-            ((TextView)findViewById(R.id.longitude)).setText(getResources().getString(R.string.lon)
-                    + ": " + String.valueOf(location.getLongitude()));
+            if (mLocationManager.isInternetAvailable() && mLocationManager.isGPSEnabled()
+                    && mLocationManager.isHighAccuracyLocationMode() && location.hasAccuracy()) {
+                ((TextView)findViewById(R.id.latitude)).setText(getResources().getString(
+                        R.string.lat)
+                        + ": " + String.valueOf(location.getLatitude()));
+                ((TextView)findViewById(R.id.longitude)).setText(getResources().getString(
+                        R.string.lon)
+                        + ": " + String.valueOf(location.getLongitude()));
+            }
         }
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-
+            if (mLocationManager.isInternetAvailable() && mLocationManager.isGPSEnabled()
+                    && mLocationManager.isHighAccuracyLocationMode()) {
+                CustomDialogFragment.dismissDialog(mFragmentManager);
+                mLocationManager.requestLocationUpdates(this);
+            } else if (!mLocationManager.isGPSEnabled()
+                    || !mLocationManager.isHighAccuracyLocationMode()) {
+                CustomDialogFragment.show(mFragmentManager, true, MainActivity.this);
+            } else if (!mLocationManager.isInternetAvailable()) {
+                CustomDialogFragment.show(mFragmentManager, false, MainActivity.this);
+            }
         }
 
         @Override
         public void onProviderDisabled(String provider) {
-            mLocationManager.unregisterListener(this);
+            if (!mLocationManager.isGPSEnabled() || !mLocationManager.isHighAccuracyLocationMode()) {
+                CustomDialogFragment.show(mFragmentManager, true, MainActivity.this);
+            } else if (!mLocationManager.isInternetAvailable()) {
+                CustomDialogFragment.show(mFragmentManager, false, MainActivity.this);
+            }
         }
 
     }
 
     public void forceUpdateLocation(View view) {
-        if (mLocationManager.isInternetAvailable() && mLocationManager.isGPSEnabled()
-                && mLocationManager.isHighAccuracyLocationMode()) {
-            if (null == mLocationListener)
-                mLocationListener = new MyLocationListener();
-            mLocationManager.requestLocationUpdates(mLocationListener);
-        } else if (!mLocationManager.isGPSEnabled()
-                || !mLocationManager.isHighAccuracyLocationMode()) {
-            CustomDialogFragment.show(getFragmentManager(), true, this);
-        } else if (!mLocationManager.isInternetAvailable()) {
-            CustomDialogFragment.show(getFragmentManager(), false, this);
-        }
+        mLocationManager.requestLocationUpdates(mLocationListener);
     }
 }
